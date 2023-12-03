@@ -18,8 +18,7 @@ app = APIRouter()
 
 @app.get("/api/chain", tags=["Chain"], dependencies=[Depends(verify_api_key)])
 async def get_chains(user=Depends(verify_api_key)):
-    chains = Chain(user=user).get_chains()
-    return chains
+    return Chain(user=user).get_chains()
 
 
 @app.get(
@@ -104,7 +103,7 @@ async def run_chain_step(
         agent_override=user_input.agent_override,
         chain_args=user_input.chain_args,
     )
-    if chain_step_response == None:
+    if chain_step_response is None:
         raise HTTPException(
             status_code=500,
             detail=f"Error running step {step_number} in chain {chain_name}",

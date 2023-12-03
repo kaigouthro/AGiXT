@@ -138,4 +138,4 @@ async def delete_history_message(
         conversation_name=history.conversation_name,
         user=user,
     )
-    return ResponseMessage(message=f"Message deleted.")
+    return ResponseMessage(message="Message deleted.")

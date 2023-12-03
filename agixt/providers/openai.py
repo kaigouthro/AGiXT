@@ -51,7 +51,7 @@ class OpenaiProvider:
                 break
 
     async def instruct(self, prompt, tokens: int = 0):
-        if self.OPENAI_API_KEY == "" or self.OPENAI_API_KEY == "YOUR_OPENAI_API_KEY":
+        if self.OPENAI_API_KEY in ["", "YOUR_OPENAI_API_KEY"]:
             if self.API_URI == "https://api.openai.com/v1":
                 return (
                     "Please go to the Agent Management page to set your OpenAI API key."

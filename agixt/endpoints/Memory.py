@@ -268,37 +268,8 @@ async def agent_reader(
     agent_config = Agent(
         agent_name=agent_name, user=user, ApiClient=ApiClient
     ).get_agent_config()
-    collection_number = data["collection_number"] if "collection_number" in data else 0
-    if reader_name == "file":
-        response = await FileReader(
-            agent_name=agent_name,
-            agent_config=agent_config,
-            collection_number=collection_number,
-            ApiClient=ApiClient,
-        ).write_file_to_memory(file_path=data["file_path"])
-    elif reader_name == "website":
-        response = await WebsiteReader(
-            agent_name=agent_name,
-            agent_config=agent_config,
-            collection_number=collection_number,
-            ApiClient=ApiClient,
-        ).write_website_to_memory(url=data["url"])
-    elif reader_name == "github":
-        response = await GithubReader(
-            agent_name=agent_name,
-            agent_config=agent_config,
-            collection_number=collection_number,
-            use_agent_settings=data["use_agent_settings"]
-            if "use_agent_settings" in data
-            else False,
-            ApiClient=ApiClient,
-        ).write_github_repository_to_memory(
-            github_repo=data["github_repo"],
-            github_user=data["github_user"] if "github_user" in data else None,
-            github_token=data["github_token"] if "github_token" in data else None,
-            github_branch=data["github_branch"] if "github_branch" in data else "main",
-        )
-    elif reader_name == "arxiv":
+    collection_number = data.get("collection_number", 0)
+    if reader_name == "arxiv":
         response = await ArxivReader(
             agent_name=agent_name,
             agent_config=agent_config,
@@ -309,6 +280,33 @@ async def agent_reader(
             article_ids=data["article_ids"],
             max_articles=data["max_articles"],
         )
+    elif reader_name == "file":
+        response = await FileReader(
+            agent_name=agent_name,
+            agent_config=agent_config,
+            collection_number=collection_number,
+            ApiClient=ApiClient,
+        ).write_file_to_memory(file_path=data["file_path"])
+    elif reader_name == "github":
+        response = await GithubReader(
+            agent_name=agent_name,
+            agent_config=agent_config,
+            collection_number=collection_number,
+            use_agent_settings=data.get("use_agent_settings", False),
+            ApiClient=ApiClient,
+        ).write_github_repository_to_memory(
+            github_repo=data["github_repo"],
+            github_user=data.get("github_user", None),
+            github_token=data.get("github_token", None),
+            github_branch=data.get("github_branch", "main"),
+        )
+    elif reader_name == "website":
+        response = await WebsiteReader(
+            agent_name=agent_name,
+            agent_config=agent_config,
+            collection_number=collection_number,
+            ApiClient=ApiClient,
+        ).write_website_to_memory(url=data["url"])
     else:
         raise HTTPException(status_code=400, detail="Invalid reader name.")
     if response == True:
@@ -316,7 +314,7 @@ async def agent_reader(
             message=f"Agent learned the content from the {reader_name}."
         )
     else:
-        return ResponseMessage(message=f"Agent failed to learn the content.")
+        return ResponseMessage(message="Agent failed to learn the content.")
 
 
 @app.delete(

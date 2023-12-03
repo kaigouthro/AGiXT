@@ -24,7 +24,7 @@ class ClaudeProvider:
         self.AI_TEMPERATURE = AI_TEMPERATURE if AI_TEMPERATURE else 0.7
 
     async def instruct(self, prompt, tokens: int = 0):
-        max_new_tokens = int(self.MAX_TOKENS) - int(tokens)
+        max_new_tokens = int(self.MAX_TOKENS) - tokens
         try:
             c = anthropic.Client(api_key=self.ANTHROPIC_API_KEY)
             return c.completion(

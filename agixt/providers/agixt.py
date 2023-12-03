@@ -7,10 +7,10 @@ class AgixtProvider:
         MAX_TOKENS: int = 16000,
         **kwargs,
     ):
-        self.ApiClient = kwargs["ApiClient"] if "ApiClient" in kwargs else None
+        self.ApiClient = kwargs.get("ApiClient", None)
         self.requirements = ["agixtsdk"]
-        self.MAX_TOKENS = int(MAX_TOKENS) if int(MAX_TOKENS) != 0 else 16000
-        self.agents = self.ApiClient.get_agents() if agents == [] else agents
+        self.MAX_TOKENS = MAX_TOKENS if MAX_TOKENS != 0 else 16000
+        self.agents = self.ApiClient.get_agents() if not agents else agents
 
     async def instruct(self, prompt, tokens: int = 0):
         for agent in self.agents:

@@ -44,21 +44,26 @@ class Emailnator:
         ).json()
         self.email = response["email"][0]
 
-        for ads in self.s.post(
-            "https://www.emailnator.com/message-list", json={"email": self.email}
-        ).json()["messageData"]:
-            self.inbox_ads.append(ads["messageID"])
+        self.inbox_ads.extend(
+            ads["messageID"]
+            for ads in self.s.post(
+                "https://www.emailnator.com/message-list",
+                json={"email": self.email},
+            ).json()["messageData"]
+        )
 
     def reload(self, wait=False, retry_timeout=5):
         self.new_msgs = []
 
         while True:
-            for msg in self.s.post(
-                "https://www.emailnator.com/message-list", json={"email": self.email}
-            ).json()["messageData"]:
-                if msg["messageID"] not in self.inbox_ads and msg not in self.inbox:
-                    self.new_msgs.append(msg)
-
+            self.new_msgs.extend(
+                msg
+                for msg in self.s.post(
+                    "https://www.emailnator.com/message-list",
+                    json={"email": self.email},
+                ).json()["messageData"]
+                if msg["messageID"] not in self.inbox_ads and msg not in self.inbox
+            )
             if wait and not self.new_msgs:
                 time.sleep(retry_timeout)
             else:
@@ -338,20 +343,21 @@ class PerplexityProvider:
             logging.info(e)
 
     def reload_account(self):
-        if self.exec_nb > 5:
-            if path.isfile(self.EMAILNATOR_COOKIE_PATH):
-                with open(
-                    self.EMAILNATOR_COOKIE_PATH,
-                    "r",
-                ) as f:
-                    curl = json.loads(f.read())
-                cookies = curl["cookies"]
-                headers = curl["headers"]
-                if not self.perplexity_cli.create_account(headers, cookies):
-                    print("Error creating account")
-                else:
-                    print("Account successfully created")
-                self.exec_nb = 1
+        if self.exec_nb <= 5:
+            return
+        if path.isfile(self.EMAILNATOR_COOKIE_PATH):
+            with open(
+                self.EMAILNATOR_COOKIE_PATH,
+                "r",
+            ) as f:
+                curl = json.loads(f.read())
+            cookies = curl["cookies"]
+            headers = curl["headers"]
+            if not self.perplexity_cli.create_account(headers, cookies):
+                print("Error creating account")
+            else:
+                print("Account successfully created")
+            self.exec_nb = 1
 
     async def instruct(self, prompt, tokens: int = 0):
         self.exec_nb += 1
@@ -363,9 +369,7 @@ class PerplexityProvider:
             mode="copilot",
             focus=self.FOCUS,
         )
-        if response["status"] == "completed":
-            return response
-        return "Error not completed"
+        return response if response["status"] == "completed" else "Error not completed"
 
 
 if __name__ == "__main__":

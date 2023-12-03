@@ -39,7 +39,7 @@ class LlamacppProvider:
         self.MAX_TOKENS = MAX_TOKENS if MAX_TOKENS else 2048
         self.AI_MODEL = AI_MODEL if AI_MODEL else "default"
         self.STOP_SEQUENCE = STOP_SEQUENCE if STOP_SEQUENCE else "</s>"
-        self.MAX_TOKENS = int(self.MAX_TOKENS) if self.MAX_TOKENS else 2048
+        self.MAX_TOKENS = self.MAX_TOKENS if self.MAX_TOKENS else 2048
         self.TFS_Z = TFS_Z if TFS_Z else 1.0
         self.TYPICAL_P = TYPICAL_P if TYPICAL_P else 1.0
         self.REPEAT_PENALTY = REPEAT_PENALTY if REPEAT_PENALTY else 1.1
@@ -84,9 +84,6 @@ class LlamacppProvider:
         data = response.json()
         print(data)
         if "choices" in data:
-            choices = data["choices"]
-            if choices:
+            if choices := data["choices"]:
                 return choices[0]["text"]
-        if "content" in data:
-            return data["content"]
-        return data
+        return data["content"] if "content" in data else data

@@ -15,9 +15,7 @@ except ImportError:
 
 
 def is_cuda_available():
-    if not torch.cuda.is_available():
-        return False
-    return has_accelerate
+    return False if not torch.cuda.is_available() else has_accelerate
 
 
 class PipelineProvider:
@@ -78,9 +76,7 @@ class PipelineProvider:
         if self.pipeline.model.generation_config.max_length:
             return self.pipeline.model.generation_config.max_length
         max_length = self.pipeline.tokenizer.model_max_length
-        if max_length == int(1e30):
-            return 4096
-        return max_length
+        return 4096 if max_length == int(1e30) else max_length
 
     def get_max_new_tokens(self, input_length: int = 0) -> int:
         max_length = self.get_max_length() - input_length

@@ -158,8 +158,7 @@ class Websearch:
                 href = await page.evaluate("(link) => link.href", link)
                 parsed_url = urllib.parse.urlparse(href)
                 query_params = urllib.parse.parse_qs(parsed_url.query)
-                uddg = query_params.get("uddg", [None])[0]
-                if uddg:
+                if uddg := query_params.get("uddg", [None])[0]:
                     href = urllib.parse.unquote(uddg)
                 if summary:
                     results.append(f"{summary} - {href}")
@@ -205,7 +204,7 @@ class Websearch:
             summaries = [
                 result["title"] + " - " + result["url"] for result in results["results"]
             ]
-            if len(summaries) < 1:
+            if not summaries:
                 self.failures.append(self.searx_instance_url)
                 self.searx_instance_url = ""
                 return await self.search(query=query)
@@ -235,7 +234,7 @@ class Websearch:
                     logging.info(f"Browsing link: {link}")
                     self.browsed_links.append(link)
                     text_content, link_list = await self.get_web_content(url=link)
-                    if int(search_depth) > 0:
+                    if search_depth > 0:
                         if link_list is not None and len(link_list) > 0:
                             i = 0
                             for sublink in link_list:
@@ -258,11 +257,11 @@ class Websearch:
             user_input=user_input, search_depth=websearch_depth
         )
         try:
-            websearch_depth = int(websearch_depth)
+            websearch_depth = websearch_depth
         except:
             websearch_depth = 0
         try:
-            websearch_timeout = int(websearch_timeout)
+            websearch_timeout = websearch_timeout
         except:
             websearch_timeout = 0
         if websearch_depth > 0:
@@ -290,13 +289,13 @@ class Websearch:
                     )
                     self.tasks.append(task)
 
-                if int(websearch_timeout) == 0:
+                if websearch_timeout == 0:
                     await asyncio.gather(*self.tasks)
                 else:
                     logging.info(
                         f"Web searching for {websearch_timeout} seconds... Please wait..."
                     )
-                    await asyncio.sleep(int(websearch_timeout))
+                    await asyncio.sleep(websearch_timeout)
                     logging.info("Websearch tasks completed.")
             else:
                 logging.info("No results found.")

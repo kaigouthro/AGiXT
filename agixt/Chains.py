@@ -19,11 +19,7 @@ class Chains:
     ):
         if step:
             if "prompt_type" in step:
-                if agent_override != "":
-                    agent_name = agent_override
-                else:
-                    agent_name = step["agent_name"]
-
+                agent_name = agent_override if agent_override != "" else step["agent_name"]
                 prompt_type = step["prompt_type"]
                 step_number = step["step"]
                 if "prompt_name" in step["prompt"]:
@@ -44,7 +40,20 @@ class Chains:
                     args["conversation_name"] = f"Chain Execution History: {chain_name}"
                 if "conversation" in args:
                     args["conversation_name"] = args["conversation"]
-                if prompt_type == "Command":
+                if prompt_type == "Chain":
+                    result = self.ApiClient.run_chain(
+                        chain_name=args["chain"],
+                        user_input=args["input"],
+                        agent_name=agent_name,
+                        all_responses=args["all_responses"]
+                        if "all_responses" in args
+                        else False,
+                        from_step=args["from_step"] if "from_step" in args else 1,
+                        chain_args=args["chain_args"]
+                        if "chain_args" in args
+                        else {"conversation_name": args["conversation_name"]},
+                    )
+                elif prompt_type == "Command":
                     return self.ApiClient.execute_command(
                         agent_name=agent_name,
                         command_name=step["prompt"]["command_name"],
@@ -62,29 +71,15 @@ class Chains:
                             **args,
                         },
                     )
-                elif prompt_type == "Chain":
-                    result = self.ApiClient.run_chain(
-                        chain_name=args["chain"],
-                        user_input=args["input"],
-                        agent_name=agent_name,
-                        all_responses=args["all_responses"]
-                        if "all_responses" in args
-                        else False,
-                        from_step=args["from_step"] if "from_step" in args else 1,
-                        chain_args=args["chain_args"]
-                        if "chain_args" in args
-                        else {"conversation_name": args["conversation_name"]},
-                    )
-        if result:
-            if isinstance(result, dict) and "response" in result:
-                result = result["response"]
-            if result == "Unable to retrieve data.":
-                result = None
-            if not isinstance(result, str):
-                result = str(result)
-            return result
-        else:
+        if not result:
             return None
+        if isinstance(result, dict) and "response" in result:
+            result = result["response"]
+        if result == "Unable to retrieve data.":
+            result = None
+        if not isinstance(result, str):
+            result = str(result)
+        return result
 
     async def run_chain(
         self,
@@ -113,15 +108,14 @@ class Chains:
         for step_data in chain_data["steps"]:
             if int(step_data["step"]) >= int(from_step):
                 if "prompt" in step_data and "step" in step_data:
-                    step = {}
-                    step["agent_name"] = (
-                        agent_override
+                    step = {
+                        "agent_name": agent_override
                         if agent_override != ""
-                        else step_data["agent_name"]
-                    )
-                    step["prompt_type"] = step_data["prompt_type"]
-                    step["prompt"] = step_data["prompt"]
-                    step["step"] = step_data["step"]
+                        else step_data["agent_name"],
+                        "prompt_type": step_data["prompt_type"],
+                        "prompt": step_data["prompt"],
+                        "step": step_data["step"],
+                    }
                     logging.info(
                         f"Running step {step_data['step']} with agent {step['agent_name']}."
                     )
@@ -136,7 +130,7 @@ class Chains:
                     except Exception as e:
                         logging.error(e)
                         step_response = None
-                    if step_response == None:
+                    if step_response is None:
                         return f"Chain failed to complete, it failed on step {step_data['step']}. You can resume by starting the chain from the step that failed."
                     step["response"] = step_response
                     last_response = step_response
@@ -149,18 +143,17 @@ class Chains:
                     )
         if all_responses:
             return responses
-        else:
-            # Return only the last response in the chain.
-            log_interaction(
-                role=agent_override if agent_override != "" else "AGiXT",
-                message=last_response,
-                agent_name=agent_override if agent_override != "" else "AGiXT",
-                conversation_name=f"Chain Execution History: {chain_name}"
-                if "conversation_name" not in chain_args
-                else chain_args["conversation_name"],
-                user=self.user,
-            )
-            return last_response
+        # Return only the last response in the chain.
+        log_interaction(
+            role=agent_override if agent_override != "" else "AGiXT",
+            message=last_response,
+            agent_name=agent_override if agent_override != "" else "AGiXT",
+            conversation_name=f"Chain Execution History: {chain_name}"
+            if "conversation_name" not in chain_args
+            else chain_args["conversation_name"],
+            user=self.user,
+        )
+        return last_response
 
     def get_chain_args(self, chain_name):
         skip_args = [
