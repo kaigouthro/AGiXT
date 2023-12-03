@@ -28,9 +28,7 @@ class FileReader(Memories):
         if "WORKSPACE_RESTRICTED" in self.agent_settings:
             if isinstance(self.agent_settings["WORKSPACE_RESTRICTED"], str):
                 self.workspace_restricted = (
-                    False
-                    if self.agent_settings["WORKSPACE_RESTRICTED"].lower() == "false"
-                    else True
+                    self.agent_settings["WORKSPACE_RESTRICTED"].lower() != "false"
                 )
 
     async def write_file_to_memory(self, file_path: str):
@@ -48,13 +46,10 @@ class FileReader(Memories):
             if file_path.endswith(".pdf"):
                 with pdfplumber.open(file_path) as pdf:
                     content = "\n".join([page.extract_text() for page in pdf.pages])
-            # If file extension is xls, convert to csv
             elif file_path.endswith(".xls") or file_path.endswith(".xlsx"):
                 content = pd.read_excel(file_path).to_csv()
-            # If file extension is doc, convert to text
             elif file_path.endswith(".doc") or file_path.endswith(".docx"):
                 content = docx2txt.process(file_path)
-            # If zip file, extract it then go over each file with read_file
             elif file_path.endswith(".zip"):
                 with zipfile.ZipFile(file_path, "r") as zipObj:
                     zipObj.extractall(path=os.path.join(base_path, "temp"))
@@ -65,7 +60,6 @@ class FileReader(Memories):
                         logging.info(f"Reading file: {file_path}")
                         await self.write_file_to_memory(file_path=file_path)
                 shutil.rmtree(os.path.join(base_path, "temp"))
-            # If it is an audio file, convert it to base64 and read with Whisper STT
             elif file_path.endswith(
                 (".mp3", ".wav", ".ogg", ".m4a", ".flac", ".wma", ".aac")
             ):
@@ -74,15 +68,11 @@ class FileReader(Memories):
                     command_name="Transcribe Audio from File",
                     command_args={"filename": file_path},
                 )
-            # Otherwise just read the file
-            else:
-                # TODO: Add a store_image function to use if it is an image
-                # If the file isn't an image extension file, just read it
-                if not file_path.endswith(
+            elif not file_path.endswith(
                     (".jpg", ".jpeg", ".png", ".gif", ".tiff", ".bmp", ".gz")
                 ):
-                    with open(file_path, "r") as f:
-                        content = f.read()
+                with open(file_path, "r") as f:
+                    content = f.read()
             if content != "":
                 stored_content = f"From file: {filename}\n{content}"
                 await self.write_text_to_memory(

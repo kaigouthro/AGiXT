@@ -21,8 +21,7 @@ from ApiClient import (
 
 def get_tokens(text: str) -> int:
     encoding = tiktoken.get_encoding("cl100k_base")
-    num_tokens = len(encoding.encode(text))
-    return num_tokens
+    return len(encoding.encode(text))
 
 
 class Interactions:
@@ -33,7 +32,11 @@ class Interactions:
         user="USER",
         ApiClient=None,
     ):
-        if agent_name != "":
+        if not agent_name:
+            self.agent_name = ""
+            self.agent = None
+            self.agent_commands = ""
+        else:
             self.agent_name = agent_name
             self.agent = Agent(self.agent_name, user=user, ApiClient=ApiClient)
             self.agent_commands = self.agent.get_commands_string()
@@ -47,14 +50,10 @@ class Interactions:
                 if "SEARXNG_INSTANCE_URL" in self.agent.AGENT_CONFIG["settings"]
                 else "",
             )
-        else:
-            self.agent_name = ""
-            self.agent = None
-            self.agent_commands = ""
         self.agent_memory = WebsiteReader(
             agent_name=self.agent_name,
             agent_config=self.agent.AGENT_CONFIG,
-            collection_number=int(collection_number),
+            collection_number=collection_number,
             ApiClient=ApiClient,
         )
         self.stop_running_event = None

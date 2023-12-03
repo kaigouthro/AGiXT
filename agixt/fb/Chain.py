@@ -52,7 +52,7 @@ class Chain:
 
     def import_chain(self, chain_name: str, steps: dict):
         file_path = get_chain_file_path(chain_name=chain_name)
-        steps = steps["steps"] if "steps" in steps else steps
+        steps = steps.get("steps", steps)
         with open(file_path, "w") as f:
             json.dump({"chain_name": chain_name, "steps": steps}, f)
         return f"Chain '{chain_name}' imported."
@@ -67,10 +67,11 @@ class Chain:
             return {}
 
     def get_chains(self):
-        chains = [
-            f.replace(".json", "") for f in os.listdir("chains") if f.endswith(".json")
+        return [
+            f.replace(".json", "")
+            for f in os.listdir("chains")
+            if f.endswith(".json")
         ]
-        return chains
 
     def add_chain(self, chain_name):
         file_path = get_chain_file_path(chain_name=chain_name)
@@ -131,10 +132,10 @@ class Chain:
 
     def get_step(self, chain_name, step_number):
         chain_data = self.get_chain(chain_name=chain_name)
-        for step in chain_data["steps"]:
-            if step["step"] == step_number:
-                return step
-        return None
+        return next(
+            (step for step in chain_data["steps"] if step["step"] == step_number),
+            None,
+        )
 
     def get_steps(self, chain_name):
         chain_data = self.get_chain(chain_name=chain_name)
@@ -146,21 +147,20 @@ class Chain:
         if not 1 <= new_step_number <= len(
             chain_data["steps"]
         ) or current_step_number not in [step["step"] for step in chain_data["steps"]]:
-            print(f"Error: Invalid step numbers.")
+            print("Error: Invalid step numbers.")
             return
         moved_step = None
         for step in chain_data["steps"]:
             if step["step"] == current_step_number:
                 moved_step = step
-                chain_data["steps"].remove(step)
+                chain_data["steps"].remove(moved_step)
                 break
         for step in chain_data["steps"]:
             if new_step_number < current_step_number:
                 if new_step_number <= step["step"] < current_step_number:
                     step["step"] += 1
-            else:
-                if current_step_number < step["step"] <= new_step_number:
-                    step["step"] -= 1
+            elif current_step_number < step["step"] <= new_step_number:
+                step["step"] -= 1
         moved_step["step"] = new_step_number
         chain_data["steps"].append(moved_step)
         chain_data["steps"] = sorted(chain_data["steps"], key=lambda x: x["step"])
@@ -174,12 +174,11 @@ class Chain:
                 responses = json.load(f)
             if step_number == "all":
                 return responses
-            else:
-                data = responses.get(str(step_number))
-                if isinstance(data, dict) and "response" in data:
-                    data = data["response"]
-                logging.info(f"Step {step_number} response: {data}")
-                return data
+            data = responses.get(str(step_number))
+            if isinstance(data, dict) and "response" in data:
+                data = data["response"]
+            logging.info(f"Step {step_number} response: {data}")
+            return data
         except:
             return ""
 
@@ -203,12 +202,11 @@ class Chain:
                         value = value.replace("{agent_name}", agent_name)
                     if "{STEP" in value:
                         step_count = value.count("{STEP")
-                        for i in range(step_count):
+                        for _ in range(step_count):
                             new_step_number = int(value.split("{STEP")[1].split("}")[0])
-                            step_response = self.get_step_response(
+                            if step_response := self.get_step_response(
                                 chain_name=chain_name, step_number=new_step_number
-                            )
-                            if step_response:
+                            ):
                                 resp = (
                                     step_response[0]
                                     if isinstance(step_response, list)
@@ -231,14 +229,13 @@ class Chain:
                 )
             if "{STEP" in prompt_content:
                 step_count = prompt_content.count("{STEP")
-                for i in range(step_count):
+                for _ in range(step_count):
                     new_step_number = int(
                         prompt_content.split("{STEP")[1].split("}")[0]
                     )
-                    step_response = self.get_step_response(
+                    if step_response := self.get_step_response(
                         chain_name=chain_name, step_number=new_step_number
-                    )
-                    if step_response:
+                    ):
                         resp = (
                             step_response[0]
                             if isinstance(step_response, list)

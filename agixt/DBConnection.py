@@ -18,7 +18,7 @@ from sqlalchemy.sql import text
 from dotenv import load_dotenv
 
 load_dotenv()
-DB_CONNECTED = True if os.getenv("DB_CONNECTED", "false").lower() == "true" else False
+DB_CONNECTED = os.getenv("DB_CONNECTED", "false").lower() == "true"
 if DB_CONNECTED:
     DATABASE_USER = os.getenv("DATABASE_USER", os.getenv("POSTGRES_USER", "postgres"))
     DATABASE_PASSWORD = os.getenv(
@@ -44,8 +44,7 @@ else:
 
 def get_session():
     Session = sessionmaker(bind=engine, autoflush=False)
-    session = Session()
-    return session
+    return Session()
 
 
 class User(Base):

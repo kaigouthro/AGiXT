@@ -25,11 +25,8 @@ async def completion(
     ApiClient = get_api_client(authorization=authorization)
     agent = Interactions(agent_name=prompt.model, user=user, ApiClient=ApiClient)
     agent_config = agent.agent.AGENT_CONFIG
-    if "settings" in agent_config:
-        if "AI_MODEL" in agent_config["settings"]:
-            model = agent_config["settings"]["AI_MODEL"]
-        else:
-            model = "undefined"
+    if "settings" in agent_config and "AI_MODEL" in agent_config["settings"]:
+        model = agent_config["settings"]["AI_MODEL"]
     else:
         model = "undefined"
     response = await agent.run(
@@ -43,7 +40,7 @@ async def completion(
     completion_tokens = get_tokens(response)
     total_tokens = int(prompt_tokens) + int(completion_tokens)
     random_chars = "".join(random.choice(characters) for _ in range(15))
-    res_model = {
+    return {
         "id": f"cmpl-{random_chars}",
         "object": "text_completion",
         "created": int(time.time()),
@@ -62,7 +59,6 @@ async def completion(
             "total_tokens": total_tokens,
         },
     }
-    return res_model
 
 
 @app.post(
@@ -77,11 +73,8 @@ async def chat_completion(
     ApiClient = get_api_client(authorization=authorization)
     agent = Interactions(agent_name=prompt.model, user=user, ApiClient=ApiClient)
     agent_config = agent.agent.AGENT_CONFIG
-    if "settings" in agent_config:
-        if "AI_MODEL" in agent_config["settings"]:
-            model = agent_config["settings"]["AI_MODEL"]
-        else:
-            model = "undefined"
+    if "settings" in agent_config and "AI_MODEL" in agent_config["settings"]:
+        model = agent_config["settings"]["AI_MODEL"]
     else:
         model = "undefined"
     response = await agent.run(
@@ -95,7 +88,7 @@ async def chat_completion(
     completion_tokens = get_tokens(response)
     total_tokens = int(prompt_tokens) + int(completion_tokens)
     random_chars = "".join(random.choice(characters) for _ in range(15))
-    res_model = {
+    return {
         "id": f"chatcmpl-{random_chars}",
         "object": "chat.completion",
         "created": int(time.time()),
@@ -118,7 +111,6 @@ async def chat_completion(
             "total_tokens": total_tokens,
         },
     }
-    return res_model
 
 
 # Use agent name in the model field to use embedding.

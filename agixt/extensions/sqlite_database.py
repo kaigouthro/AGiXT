@@ -17,8 +17,8 @@ class sqlite_database(Extensions):
         SQLITE_DATABASE_PATH: str = "",
         **kwargs,
     ):
-        self.agent_name = kwargs["agent_name"] if "agent_name" in kwargs else "gpt4free"
-        self.ApiClient = kwargs["ApiClient"] if "ApiClient" in kwargs else None
+        self.agent_name = kwargs.get("agent_name", "gpt4free")
+        self.ApiClient = kwargs.get("ApiClient", None)
         self.SQLITE_DATABASE_PATH = SQLITE_DATABASE_PATH
         self.commands = {
             "Custom SQL Query in SQLite Database": self.execute_sql,
@@ -27,8 +27,7 @@ class sqlite_database(Extensions):
 
     def get_connection(self):
         try:
-            connection = sqlite3.connect(self.SQLITE_DATABASE_PATH)
-            return connection
+            return sqlite3.connect(self.SQLITE_DATABASE_PATH)
         except Exception as e:
             logging.error(f"Error connecting to SQLite Database. Error: {str(e)}")
             return None
@@ -52,15 +51,10 @@ class sqlite_database(Extensions):
                 return str(rows[0][0])
             # If there is more than 1 column and at least 1 row, return it as a CSV format
             if len(rows) >= 1 and len(rows[0]) > 1:
-                # If there is more than 1 column and at least 1 row, return it as a CSV format, build column heading, and make sure each row value is quoted
-                column_headings = []
-                for column in cursor.description:
-                    column_headings.append(f'"{column[0]}"')
+                column_headings = [f'"{column[0]}"' for column in cursor.description]
                 rows_string += ",".join(column_headings) + "\n"
                 for row in rows:
-                    row_string = []
-                    for value in row:
-                        row_string.append(f'"{value}"')
+                    row_string = [f'"{value}"' for value in row]
                     rows_string += ",".join(row_string) + "\n"
                 return rows_string
             # If there is only 1 column and more than 1 row, return it as a CSV format

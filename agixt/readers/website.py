@@ -36,8 +36,7 @@ class WebsiteReader(Memories):
             await browser.close()
             soup = BeautifulSoup(content, "html.parser")
             text_content = soup.get_text()
-            text_content = " ".join(text_content.split())
-            if text_content:
+            if text_content := " ".join(text_content.split()):
                 stored_content = f"From website: {url}\n\nContent:\n{text_content}"
                 await self.write_text_to_memory(
                     user_input=url, text=stored_content, external_source=url

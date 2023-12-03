@@ -45,8 +45,7 @@ class huggingface(Extensions):
             data=audio,
         )
 
-        text = json.loads(response.content.decode("utf-8"))["text"]
-        return text
+        return json.loads(response.content.decode("utf-8"))["text"]
 
     async def transcribe_base64_audio(self, audio: str):
         if self.HUGGINGFACE_API_KEY is None:
@@ -59,5 +58,4 @@ class huggingface(Extensions):
             data=audio,
         )
 
-        text = json.loads(response.content.decode("utf-8"))["text"]
-        return text
+        return json.loads(response.content.decode("utf-8"))["text"]

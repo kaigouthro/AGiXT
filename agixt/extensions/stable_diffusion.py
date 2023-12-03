@@ -64,7 +64,7 @@ class stable_diffusion(Extensions):
         tiling: bool = False,
         width: int = 768,
     ) -> str:
-        if filename == "":
+        if not filename:
             filename = f"{uuid.uuid4()}.png"
         image_path = f"./WORKSPACE/{filename}"
         headers = {}

@@ -33,7 +33,7 @@ class Gpt4freeProvider:
 
     async def instruct(self, prompt, tokens: int = 0):
         max_new_tokens = (
-            int(self.MAX_TOKENS) - int(tokens) if tokens > 0 else self.MAX_TOKENS
+            int(self.MAX_TOKENS) - tokens if tokens > 0 else self.MAX_TOKENS
         )
         model = self.AI_MODEL
         provider = model.best_provider

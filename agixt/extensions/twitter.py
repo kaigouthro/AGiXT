@@ -39,4 +39,4 @@ class twitter(Extensions):
             api.update_status(tweet_text)
             logging.info("Tweet sent successfully!")
         except tweepy.TweepyException as e:
-            logging.info("Error sending tweet: {}".format(e.reason))
+            logging.info(f"Error sending tweet: {e.reason}")

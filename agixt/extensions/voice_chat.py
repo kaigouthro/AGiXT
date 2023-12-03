@@ -43,39 +43,33 @@ except ImportError:
 
 class voice_chat(Extensions):
     def __init__(self, WHISPER_MODEL="base.en", **kwargs):
-        self.ApiClient = kwargs["ApiClient"] if "ApiClient" in kwargs else None
-        if "agent_name" in kwargs:
-            self.agent_name = kwargs["agent_name"]
-        else:
-            self.agent_name = "gpt4free"
+        self.ApiClient = kwargs.get("ApiClient", None)
+        self.agent_name = kwargs.get("agent_name", "gpt4free")
         self.voice_prompt = "Custom Input"
         self.tts_command = "Speak with TTS with Streamlabs Text to Speech"
         if "USE_STREAMLABS_TTS" in kwargs:
             if isinstance(kwargs["USE_STREAMLABS_TTS"], bool):
                 if kwargs["USE_STREAMLABS_TTS"]:
                     self.tts_command = "Speak with TTS with Streamlabs Text to Speech"
-            else:
-                if kwargs["USE_STREAMLABS_TTS"].lower() == "true":
-                    self.tts_command = "Speak with TTS with Streamlabs Text to Speech"
+            elif kwargs["USE_STREAMLABS_TTS"].lower() == "true":
+                self.tts_command = "Speak with TTS with Streamlabs Text to Speech"
         if "USE_GTTS" in kwargs:
             if isinstance(kwargs["USE_GTTS"], bool):
                 if kwargs["USE_GTTS"]:
                     self.tts_command = "Speak with GTTS"
-            else:
-                if kwargs["USE_GTTS"].lower() == "true":
-                    self.tts_command = "Speak with GTTS"
+            elif kwargs["USE_GTTS"].lower() == "true":
+                self.tts_command = "Speak with GTTS"
         if "USE_HUGGINGFACE_TTS" in kwargs:
             if isinstance(kwargs["USE_HUGGINGFACE_TTS"], bool):
                 if kwargs["USE_HUGGINGFACE_TTS"] and "HUGGINGFACE_API_KEY" in kwargs:
                     if kwargs["ELEVENLABS_API_KEY"] != "":
                         self.tts_command = "Read Audio with Huggingface"
-            else:
-                if (
+            elif (
                     kwargs["USE_HUGGINGFACE_TTS"].lower() == "true"
                     and "HUGGINGFACE_API_KEY" in kwargs
                 ):
-                    if kwargs["HUGGINGFACE_API_KEY"] != "":
-                        self.tts_command = "Read Audio with Huggingface"
+                if kwargs["HUGGINGFACE_API_KEY"] != "":
+                    self.tts_command = "Read Audio with Huggingface"
         if "ELEVENLABS_API_KEY" in kwargs:
             if kwargs["ELEVENLABS_API_KEY"] != "":
                 self.tts_command = "Speak with TTS Using Elevenlabs"

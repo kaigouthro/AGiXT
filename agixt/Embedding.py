@@ -66,14 +66,14 @@ class Embedding:
             self.chunk_size = 256
 
     def get_embedder_settings(self):
-        if "API_URI" in self.agent_settings:
-            if self.agent_settings["API_URI"] != "":
-                api_base = self.agent_settings["API_URI"]
-            else:
-                api_base = None
+        if (
+            "API_URI" in self.agent_settings
+            and self.agent_settings["API_URI"] != ""
+        ):
+            api_base = self.agent_settings["API_URI"]
         else:
             api_base = None
-        embedder_settings = {
+        return {
             "default": {
                 "chunk_size": 256,
                 "embed": self.default_embedder,
@@ -136,11 +136,9 @@ class Embedding:
                 else self.default_embedder,
             },
         }
-        return embedder_settings
 
     def embed_text(self, text) -> np.ndarray:
-        embedding = self.embedder.__call__(texts=[text])[0]
-        return embedding
+        return self.embedder.__call__(texts=[text])[0]
 
 
 def get_embedding_providers():

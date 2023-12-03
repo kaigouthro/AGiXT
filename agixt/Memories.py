@@ -50,20 +50,19 @@ def chroma_compute_similarity_scores(
     valid_indices = (query_norm != 0) & (collection_norm != 0)
     similarity_scores = array([-1.0] * embedding_array.shape[0])
 
-    if valid_indices.any():
-        similarity_scores[valid_indices] = embedding.dot(
-            embedding_array[valid_indices].T
-        ) / (query_norm * collection_norm[valid_indices])
-        if not valid_indices.all() and logger:
-            logger.warning(
-                "Some vectors in the embedding collection are zero vectors."
-                "Ignoring cosine similarity score computation for those vectors."
-            )
-    else:
+    if not valid_indices.any():
         raise ValueError(
             f"Invalid vectors, cannot compute cosine similarity scores"
             f"for zero vectors"
             f"{embedding_array} or {embedding}"
+        )
+    similarity_scores[valid_indices] = embedding.dot(
+        embedding_array[valid_indices].T
+    ) / (query_norm * collection_norm[valid_indices])
+    if not valid_indices.all() and logger:
+        logger.warning(
+            "Some vectors in the embedding collection are zero vectors."
+            "Ignoring cosine similarity score computation for those vectors."
         )
     return similarity_scores
 
@@ -75,7 +74,7 @@ def query_results_to_records(results: "QueryResult"):
                 results[k] = [v]
     except IndexError:
         return []
-    memory_records = [
+    return [
         {
             "is_reference": metadata["is_reference"] == "True",
             "external_source_name": metadata["external_source_name"],
@@ -94,7 +93,6 @@ def query_results_to_records(results: "QueryResult"):
             results["metadatas"][0],
         )
     ]
-    return memory_records
 
 
 def get_chroma_client():
@@ -112,9 +110,7 @@ def get_chroma_client():
             return chromadb.HttpClient(
                 host=chroma_host,
                 port=os.environ.get("CHROMA_PORT", "8000"),
-                ssl=False
-                if os.environ.get("CHROMA_SSL", "false").lower() != "true"
-                else True,
+                ssl=os.environ.get("CHROMA_SSL", "false").lower() == "true",
                 headers=chroma_headers,
                 settings=chroma_settings,
             )
@@ -173,25 +169,23 @@ class Memories:
 
     async def export_collection_to_json(self):
         collection = await self.get_collection()
-        if collection == None:
+        if collection is None:
             return ""
         results = collection.get()
-        json_data = []
-        for id, document, embedding, metadata in zip(
-            results["ids"][0],
-            results["documents"][0],
-            results["embeddings"][0],
-            results["metadatas"][0],
-        ):
-            json_data.append(
-                {
-                    "external_source_name": metadata["external_source_name"],
-                    "description": metadata["description"],  # User input
-                    "text": document,
-                    "timestamp": metadata["timestamp"],
-                }
+        return [
+            {
+                "external_source_name": metadata["external_source_name"],
+                "description": metadata["description"],  # User input
+                "text": document,
+                "timestamp": metadata["timestamp"],
+            }
+            for id, document, embedding, metadata in zip(
+                results["ids"][0],
+                results["documents"][0],
+                results["embeddings"][0],
+                results["metadatas"][0],
             )
-        return json_data
+        ]
 
     async def export_collections_to_json(self):
         collections = await self.get_collections()
@@ -284,7 +278,7 @@ class Memories:
         collection = await self.get_collection()
         if text:
             if not isinstance(text, str):
-                text = str(text)
+                text = text
             if self.summarize_content:
                 text = await self.summarize_text(text=text)
             chunks = await self.chunk_content(text=text, chunk_size=self.chunk_size)
@@ -314,7 +308,7 @@ class Memories:
         if not user_input:
             return ""
         collection = await self.get_collection()
-        if collection == None:
+        if collection is None:
             return ""
         embedding = array(self.embed.embed_text(text=user_input))
         results = collection.query(
@@ -344,8 +338,7 @@ class Memories:
         filtered_results = [
             x for x in sorted_results if x["relevance_score"] >= min_relevance_score
         ]
-        top_results = filtered_results[:limit]
-        return top_results
+        return filtered_results[:limit]
 
     async def get_memories(
         self,
@@ -372,9 +365,7 @@ class Memories:
                     else None
                 )
                 if external_source:
-                    # If the external source is a url or a file path, add it to the metadata
-                    if external_source:
-                        metadata = f"Sourced from {external_source}:\n{metadata}"
+                    metadata = f"Sourced from {external_source}:\n{metadata}"
                 if metadata not in response and metadata != "":
                     response.append(metadata)
         return response
@@ -382,8 +373,7 @@ class Memories:
     def score_chunk(self, chunk: str, keywords: set) -> int:
         """Score a chunk based on the number of query keywords it contains."""
         chunk_counter = Counter(chunk.split())
-        score = sum(chunk_counter[keyword] for keyword in keywords)
-        return score
+        return sum(chunk_counter[keyword] for keyword in keywords)
 
     async def chunk_content(self, text: str, chunk_size: int) -> List[str]:
         doc = nlp(text)

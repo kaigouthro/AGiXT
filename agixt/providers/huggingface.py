@@ -42,9 +42,7 @@ class HuggingfaceProvider:
         return self.HUGGINGFACE_API_URL.replace("{model}", self.MODEL_PATH)
 
     def get_max_length(self):
-        if self.MODEL_PATH in MODELS:
-            return MODELS[self.MODEL_PATH]
-        return 4096
+        return MODELS[self.MODEL_PATH] if self.MODEL_PATH in MODELS else 4096
 
     def get_max_new_tokens(self, input_length: int = 0) -> int:
         return min(self.get_max_length() - input_length, self.MAX_TOKENS)

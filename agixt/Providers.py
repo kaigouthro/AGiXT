@@ -45,7 +45,7 @@ def get_provider_options(provider_name):
                 if param.default is not inspect.Parameter.empty
                 else None
                 for name, param in signature.parameters.items()
-                if name != "self" and name != "kwargs"
+                if name not in ["self", "kwargs"]
             }
         except:
             pass
@@ -55,14 +55,12 @@ def get_provider_options(provider_name):
 
 
 def get_providers_with_settings():
-    providers = []
-    for provider in get_providers():
-        providers.append(
-            {
-                provider: get_provider_options(provider_name=provider),
-            }
-        )
-    return providers
+    return [
+        {
+            provider: get_provider_options(provider_name=provider),
+        }
+        for provider in get_providers()
+    ]
 
 
 class Providers:

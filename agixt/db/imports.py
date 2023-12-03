@@ -36,8 +36,11 @@ def import_agents(user="USER"):
     existing_agent_names = [agent.name for agent in existing_agents]
 
     for agent_name in agents:
-        agent = session.query(Agent).filter_by(name=agent_name, user_id=user_id).first()
-        if agent:
+        if (
+            agent := session.query(Agent)
+            .filter_by(name=agent_name, user_id=user_id)
+            .first()
+        ):
             print(f"Updating agent: {agent_name}")
         else:
             # Get the agent config from agents/agent_name/config.json
@@ -176,12 +179,11 @@ def import_extensions():
             continue
 
         for setting_name, setting_value in settings.items():
-            setting = (
+            if setting := (
                 session.query(Setting)
                 .filter_by(extension_id=extension.id, name=setting_name)
                 .first()
-            )
-            if setting:
+            ):
                 setting.value = setting_value
                 print(
                     f"Updating setting: {setting_name} for extension: {extension_name}"
@@ -206,7 +208,7 @@ def import_chains(user="USER"):
         if os.path.isfile(os.path.join(chain_dir, file)) and file.endswith(".json")
     ]
     if not chain_files:
-        print(f"No JSON files found in chains directory.")
+        print("No JSON files found in chains directory.")
         return
     from db.Chain import Chain
 
@@ -280,10 +282,11 @@ def import_prompts(user="USER"):
                 )
                 .first()
             )
-            prompt_args = []
-            for word in prompt_content.split():
-                if word.startswith("{") and word.endswith("}"):
-                    prompt_args.append(word[1:-1])
+            prompt_args = [
+                word[1:-1]
+                for word in prompt_content.split()
+                if word.startswith("{") and word.endswith("}")
+            ]
             if not prompt:
                 # Create the prompt entry in the database
                 prompt = Prompt(
@@ -375,12 +378,11 @@ def import_providers():
             session.commit()
 
         for option_name, option_value in provider_options.items():
-            provider_setting = (
+            if provider_setting := (
                 session.query(ProviderSetting)
                 .filter_by(provider_id=provider.id, name=option_name)
                 .one_or_none()
-            )
-            if provider_setting:
+            ):
                 provider_setting.value = option_value
                 print(
                     f"Updating provider setting: {option_name} for provider: {provider_name}"

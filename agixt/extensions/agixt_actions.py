@@ -69,7 +69,7 @@ def execute_python_code(code: str, working_directory: str = None) -> str:
         # Run the Python code in the container
         container = client.containers.run(
             IMAGE_NAME,
-            f"python /workspace/temp.py",
+            "python /workspace/temp.py",
             volumes={
                 os.path.abspath(docker_working_dir): {
                     "bind": "/workspace",
@@ -168,16 +168,12 @@ class agixt_actions(Extensions):
 
         for chain in chains:
             self.commands[chain] = self.run_chain
-        self.command_name = (
-            kwargs["command_name"] if "command_name" in kwargs else "Smart Prompt"
-        )
-        self.agent_name = kwargs["agent_name"] if "agent_name" in kwargs else "gpt4free"
-        self.conversation_name = (
-            kwargs["conversation_name"] if "conversation_name" in kwargs else ""
-        )
+        self.command_name = kwargs.get("command_name", "Smart Prompt")
+        self.agent_name = kwargs.get("agent_name", "gpt4free")
+        self.conversation_name = kwargs.get("conversation_name", "")
         self.WORKING_DIRECTORY = os.path.join(os.getcwd(), "WORKSPACE")
         os.makedirs(self.WORKING_DIRECTORY, exist_ok=True)
-        self.ApiClient = kwargs["ApiClient"] if "ApiClient" in kwargs else None
+        self.ApiClient = kwargs.get("ApiClient", None)
 
     async def models(self):
         return LLM().models()
@@ -310,7 +306,7 @@ class agixt_actions(Extensions):
         return chain_name
 
     async def run_chain(self, input_for_task: str = ""):
-        response = await self.ApiClient.run_chain(
+        return await self.ApiClient.run_chain(
             chain_name=self.command_name,
             user_input=input_for_task,
             agent_name=self.agent_name,
@@ -320,7 +316,6 @@ class agixt_actions(Extensions):
                 "conversation_name": self.conversation_name,
             },
         )
-        return response
 
     def parse_openapi(self, data):
         endpoints = []
@@ -480,9 +475,9 @@ class agixt_actions(Extensions):
         )
         new_extension = self.ApiClient.get_prompt(prompt_name="New Extension Format")
         new_extension = new_extension.replace("{extension_name}", extension_name)
-        new_extension = new_extension.replace("extension_commands", "STEP" + str(i))
+        new_extension = new_extension.replace("extension_commands", f"STEP{i}")
         new_extension = new_extension.replace(
-            "extension_functions", "STEP" + str(i - 1)
+            "extension_functions", f"STEP{str(i - 1)}"
         )
         new_extension = new_extension.replace("{auth_type}", auth_type)
         i += 1
@@ -558,7 +553,7 @@ class agixt_actions(Extensions):
             return f"Unable to create command: {e}"
 
     async def ask(self, user_input: str) -> str:
-        response = self.ApiClient.prompt_agent(
+        return self.ApiClient.prompt_agent(
             agent_name=self.agent_name,
             prompt_name="Chat",
             prompt_args={
@@ -568,10 +563,9 @@ class agixt_actions(Extensions):
                 "conversation_name": self.conversation_name,
             },
         )
-        return response
 
     async def instruct(self, user_input: str) -> str:
-        response = self.ApiClient.prompt_agent(
+        return self.ApiClient.prompt_agent(
             agent_name=self.agent_name,
             prompt_name="instruct",
             prompt_args={
@@ -581,7 +575,6 @@ class agixt_actions(Extensions):
                 "conversation_name": self.conversation_name,
             },
         )
-        return response
 
     async def get_python_code_from_response(self, response: str):
         if "```python" in response:
@@ -622,15 +615,13 @@ class agixt_actions(Extensions):
         with open(filepath, "r") as f:
             lines = f.readlines()
         lines = lines[:2]
-        lines_string = "\n".join(lines)
-        return lines_string
+        return "\n".join(lines)
 
     async def get_csv_preview_text(self, text: str):
         # Get first 2 lines of the text
         lines = text.split("\n")
         lines = lines[:2]
-        lines_string = "\n".join(lines)
-        return lines_string
+        return "\n".join(lines)
 
     async def get_csv_from_response(self, response: str) -> str:
         return response.split("```csv")[1].split("```")[0]

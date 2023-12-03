@@ -25,7 +25,7 @@ class GithubReader(Memories):
         )
         self.use_agent_settings = use_agent_settings
         if (
-            use_agent_settings == True
+            use_agent_settings
             and "GITHUB_USERNAME" in self.agent_settings
             and "GITHUB_API_KEY" in self.agent_settings
         ):

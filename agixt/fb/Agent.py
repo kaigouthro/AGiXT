@@ -86,8 +86,7 @@ def get_agents(user="USER"):
     ]
     output = []
     if agents:
-        for agent in agents:
-            output.append({"name": agent, "status": False})
+        output.extend({"name": agent, "status": False} for agent in agents)
     return output
 
 
@@ -120,10 +119,7 @@ class Agent:
             if "embedder" in self.PROVIDER_SETTINGS:
                 self.EMBEDDER = self.PROVIDER_SETTINGS["embedder"]
             else:
-                if self.AI_PROVIDER == "openai":
-                    self.EMBEDDER = "openai"
-                else:
-                    self.EMBEDDER = "default"
+                self.EMBEDDER = "openai" if self.AI_PROVIDER == "openai" else "default"
             if "MAX_TOKENS" in self.PROVIDER_SETTINGS:
                 self.MAX_TOKENS = self.PROVIDER_SETTINGS["MAX_TOKENS"]
             else:
@@ -134,9 +130,7 @@ class Agent:
                 ]
                 if isinstance(self.AUTONOMOUS_EXECUTION, str):
                     self.AUTONOMOUS_EXECUTION = self.AUTONOMOUS_EXECUTION.lower()
-                    self.AUTONOMOUS_EXECUTION = (
-                        True if self.AUTONOMOUS_EXECUTION == "true" else False
-                    )
+                    self.AUTONOMOUS_EXECUTION = self.AUTONOMOUS_EXECUTION == "true"
             else:
                 self.AUTONOMOUS_EXECUTION = True
             self.commands = self.load_commands()
@@ -148,8 +142,7 @@ class Agent:
     async def instruct(self, prompt, tokens):
         if not prompt:
             return ""
-        answer = await self.PROVIDER.instruct(prompt=prompt, tokens=tokens)
-        return answer
+        return await self.PROVIDER.instruct(prompt=prompt, tokens=tokens)
 
     def _load_agent_config_keys(self, keys):
         for key in keys:
@@ -168,7 +161,6 @@ class Agent:
             json.dump(self.AGENT_CONFIG, f)
 
     def get_commands_string(self):
-        verbose_commands = "**You have commands available to use if they would be useful to provide a better user experience.**\n```json\n{\n"
         if len(self.available_commands) == 0:
             return ""
         enabled_commands = filter(
@@ -182,27 +174,23 @@ class Agent:
         )
         if not friendly_names:
             return ""
-        verbose_commands += "\n".join(friendly_names)
+        verbose_commands = (
+            "**You have commands available to use if they would be useful to provide a better user experience.**\n```json\n{\n"
+            + "\n".join(friendly_names)
+        )
         verbose_commands += "}\n```"
-        verbose_commands = '**To execute a command, use the example below, it will be replaced with the commands output for the user. You can execute a command anywhere in your response and the commands will be executed in the order you use them.**\n#execute_command("Name of Command", {"arg1": "val1", "arg2": "val2"})'
-        return verbose_commands
+        return '**To execute a command, use the example below, it will be replaced with the commands output for the user. You can execute a command anywhere in your response and the commands will be executed in the order you use them.**\n#execute_command("Name of Command", {"arg1": "val1", "arg2": "val2"})'
 
     def get_provider(self):
         config_file = self.get_agent_config()
-        if "provider" in config_file:
-            return config_file["provider"]
-        else:
-            return "openai"
+        return config_file["provider"] if "provider" in config_file else "openai"
 
     def get_command_params(self, func):
-        params = {}
         sig = signature(func)
-        for name, param in sig.parameters.items():
-            if param.default == Parameter.empty:
-                params[name] = None
-            else:
-                params[name] = param.default
-        return params
+        return {
+            name: None if param.default == Parameter.empty else param.default
+            for name, param in sig.parameters.items()
+        }
 
     def load_commands(self):
         commands = []
@@ -222,8 +210,7 @@ class Agent:
             if os.path.exists(self.config_path):
                 try:
                     with open(self.config_path, "r") as f:
-                        file_content = f.read().strip()
-                        if file_content:
+                        if file_content := f.read().strip():
                             return json.loads(file_content)
                 except:
                     None
@@ -231,21 +218,20 @@ class Agent:
             return self.get_agent_config()
 
     def update_agent_config(self, new_config, config_key):
-        if os.path.exists(self.config_path):
-            with open(self.config_path, "r") as f:
-                current_config = json.load(f)
-
-            # Ensure the config_key is present in the current configuration
-            if config_key not in current_config:
-                current_config[config_key] = {}
-
-            # Update the specified key with new_config while preserving other keys and values
-            for key, value in new_config.items():
-                current_config[config_key][key] = value
-
-            # Save the updated configuration back to the file
-            with open(self.config_path, "w") as f:
-                json.dump(current_config, f)
-            return f"Agent {self.agent_name} configuration updated."
-        else:
+        if not os.path.exists(self.config_path):
             return f"Agent {self.agent_name} configuration not found."
+        with open(self.config_path, "r") as f:
+            current_config = json.load(f)
+
+        # Ensure the config_key is present in the current configuration
+        if config_key not in current_config:
+            current_config[config_key] = {}
+
+        # Update the specified key with new_config while preserving other keys and values
+        for key, value in new_config.items():
+            current_config[config_key][key] = value
+
+        # Save the updated configuration back to the file
+        with open(self.config_path, "w") as f:
+            json.dump(current_config, f)
+        return f"Agent {self.agent_name} configuration updated."
